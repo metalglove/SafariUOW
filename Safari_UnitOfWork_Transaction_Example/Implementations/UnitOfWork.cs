@@ -6,35 +6,42 @@ namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
     public class UnitOfWork : IUnitOfWork
     {
+        private readonly IFactory<TransactionScope, IsolationLevel> _transactionScopeFactory;
+        private readonly IFactory<IUserRepository, SqlConnection, IFactory<TransactionScope, IsolationLevel>> _userRepositoryfactory;
         private readonly SqlConnection _sqlConnection;
-        private readonly TransactionScope _transactionScope;
+
+        #region Repositories
         private IUserRepository _userRepository;
         public IUserRepository UserRepository
         {
-            get => _userRepository ?? (_userRepository = new UserRepository(_sqlConnection, _transactionScope));
+            get => _userRepository ?? 
+                (_userRepository = _userRepositoryfactory.Create(_sqlConnection, _transactionScopeFactory));
         }
+        #endregion
 
-        public UnitOfWork(SqlConnection sqlConnection, IsolationLevel isolationLevel)
+        public UnitOfWork(
+            IFactory<IUserRepository, SqlConnection, IFactory<TransactionScope, IsolationLevel>> userRepositoryfactory, 
+            IFactory<TransactionScope, IsolationLevel> transactionScopeFactory, 
+            SqlConnection sqlConnection)
         {
+            _userRepositoryfactory = userRepositoryfactory;
+            _transactionScopeFactory = transactionScopeFactory;
             _sqlConnection = sqlConnection;
-            _transactionScope = new TransactionScope(
-                TransactionScopeOption.Required,
-                new TransactionOptions
-                {
-                    IsolationLevel = isolationLevel,
-                    Timeout = TransactionManager.DefaultTimeout
-                });
         }
 
-        public void Commit()
+        public bool Commit()
         {
-            _transactionScope.Complete();
+            if(!UserRepository.Equals(null))
+                UserRepository.Commit();
+
+            return true;
         }
 
         public void Dispose()
         {
             _sqlConnection.Dispose();
-            _transactionScope.Dispose();
+            if (!UserRepository.Equals(null))
+                UserRepository.Dispose();
         }
     }
 }
