@@ -42,5 +42,35 @@ namespace Safari_Tests
             User recievedUser = users.First();
             Assert.AreEqual(user.UserName, recievedUser.UserName);
         }
+        [TestMethod]
+        public void AddNewUserWithUsingStatements()
+        {
+            User user = new User("secondTestUser");
+
+            IEnumerable<User> users;
+            using (IUnitOfWork unitOfWork = UOWFactory.Create(IsolationLevel.ReadCommitted))
+            {
+                users = unitOfWork.UserRepository.GetAllUsers();
+                unitOfWork.Commit();
+            }
+            Assert.AreEqual(1, users.Count());
+
+            using (IUnitOfWork unitOfWork = UOWFactory.Create(IsolationLevel.ReadCommitted))
+            {
+                unitOfWork.UserRepository.AddUser(user);
+                unitOfWork.Commit();
+            }
+
+            using (IUnitOfWork unitOfWork = UOWFactory.Create(IsolationLevel.Serializable))
+            {
+                users = unitOfWork.UserRepository.GetAllUsers();
+                unitOfWork.Commit();
+            }
+
+            Assert.AreEqual(2, users.Count());
+
+            User recievedUser = users.Last();
+            Assert.AreEqual(user.UserName, recievedUser.UserName);
+        }
     }
 }
