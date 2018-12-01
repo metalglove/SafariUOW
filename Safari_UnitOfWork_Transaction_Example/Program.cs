@@ -1,12 +1,10 @@
-﻿using System;
-
-namespace Safari_UnitOfWork_Transaction_Example
+﻿namespace Safari_UnitOfWork_Transaction_Example
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            // refer to the unit test project for the code..
         }
     }
 }
