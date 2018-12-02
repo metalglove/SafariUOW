@@ -11,7 +11,6 @@ namespace Safari_Tests
     public class UserRepositoryTests
     {
         private IFactory<IUnitOfWork> UOWFactory { get; set; }
-        private IUnitOfWork UnitOfWork { get; set; }
 
         public UserRepositoryTests()
         {
@@ -36,15 +35,15 @@ namespace Safari_Tests
         {
             User user = new User("Username");
 
-            UnitOfWork = UOWFactory.Create();
+            IUnitOfWork UnitOfWork = UOWFactory.Create();
             int userId = UnitOfWork.UserRepository.AddUser(user);
             UnitOfWork.Commit();
             UnitOfWork.Dispose();
 
-            UnitOfWork = UOWFactory.Create();
-            IEnumerable<User> users = UnitOfWork.UserRepository.GetAllUsers();
-            UnitOfWork.Commit();
-            UnitOfWork.Dispose();
+            IUnitOfWork UnitOfWork2 = UOWFactory.Create();
+            IEnumerable<User> users = UnitOfWork2.UserRepository.GetAllUsers();
+            UnitOfWork2.Commit();
+            UnitOfWork2.Dispose();
 
             User recievedUser = users.Single(usr => usr.Id.Equals(userId));
             Assert.AreEqual(user.UserName, recievedUser.UserName);
