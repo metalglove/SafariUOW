@@ -2,59 +2,51 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Text;
-using System.Transactions;
+using System.Diagnostics;
 
 namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
     public class UserRepository : IUserRepository
     {
-        private readonly SqlConnection _sqlConnection;
-        private readonly TransactionScope _transactionScope;
+        private SqlCommand SqlCommand { get; set; }
+        private SqlConnection SqlConnection { get; set; }
+        private SqlTransaction SqlTransaction { get; set; }
 
-        public UserRepository(SqlConnection sqlConnection, TransactionScope transactionScope)
+        public UserRepository(SqlConnection connection)
         {
-            _sqlConnection = sqlConnection;
-            _transactionScope = transactionScope;
+            SqlConnection = connection;
+            SqlCommand = SqlConnection.CreateCommand();
+            SqlConnection.Open();
+            SqlTransaction = SqlConnection.BeginTransaction();
+            SqlCommand.Transaction = SqlTransaction;
         }
 
         public int AddUser(User user)
         {
-            string QueryString = "INSERT INTO BasicUser (Username) OUTPUT Inserted.Id VALUES (@username);";
-            int basicUserId = -1;
-            using (TransactionScope scope = new TransactionScope())
-            using (SqlConnection conn = new SqlConnection(_sqlConnection.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand(QueryString, conn))
+            int userId = -1;
+            SqlCommand.CommandText = "INSERT INTO BasicUser (Username) OUTPUT Inserted.Id VALUES (@username);";
+            SqlCommand.Parameters.Clear();
+            SqlCommand.Parameters.AddWithValue("username", user.UserName);
+            using (SqlDataReader reader = SqlCommand.ExecuteReader())
             {
-                conn.Open();
-                cmd.Parameters.AddWithValue("username", user.UserName);
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    reader.Read();
-                    basicUserId = (int)reader["Id"];
-                }
-                scope.Complete();
+                reader.Read();
+                userId = (int)reader["Id"];
             }
-            return basicUserId;
+            return userId;
         }
         public IEnumerable<User> GetAllUsers()
         {
-            string QueryString = "SELECT Id, Username, LastLogin, RegisterDate FROM BasicUser;";
-            List<User> result = new List<User>();
-            using (SqlConnection conn = new SqlConnection(_sqlConnection.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand(QueryString, conn))
+            List<User> users = new List<User>();
+            SqlCommand.CommandText = "SELECT Id, Username, LastLogin, RegisterDate FROM BasicUser;";
+            using (SqlDataReader reader = SqlCommand.ExecuteReader())
             {
-                conn.Open();
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                        result.Add(CreateBasicUserFromReader(reader));
-                }
-                return result;
+                while (reader.Read())
+                    users.Add(CreateUserFromReader(reader));
             }
+            return users;
         }
 
-        private static User CreateBasicUserFromReader(SqlDataReader reader)
+        private static User CreateUserFromReader(SqlDataReader reader)
         {
             return new User(
                 id: (int)reader["Id"],
@@ -62,6 +54,41 @@ namespace Safari_UnitOfWork_Transaction_Example.Implementations
                 lastLogin: DateTime.Now,
                 registerDate: Convert.ToDateTime(reader["RegisterDate"])
             );
+        }
+
+        public bool Commit()
+        {
+            try
+            {
+                SqlTransaction.Commit();
+                return true;
+            }
+            catch (Exception ex) 
+            {
+                Debug.Write($"{nameof(Commit)}, \nException: {ex.Message}");
+                SqlTransaction.Rollback();
+                return false;
+            }
+        }
+        public bool Rollback()
+        {
+            try
+            {
+                SqlTransaction.Rollback();
+                return true;
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                return false;
+            }
+        }
+        public void Dispose()
+        {
+            SqlConnection.Close();
+            SqlCommand.Dispose();
+            SqlConnection.Dispose();
+            SqlTransaction.Dispose();
         }
     }
 }

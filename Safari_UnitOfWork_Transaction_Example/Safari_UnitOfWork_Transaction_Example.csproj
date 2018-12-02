@@ -9,4 +9,8 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0-preview3-27014-02" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Abstractions\" />
+  </ItemGroup>
+
 </Project>

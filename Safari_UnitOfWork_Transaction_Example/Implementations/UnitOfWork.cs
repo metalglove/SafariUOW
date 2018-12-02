@@ -1,40 +1,48 @@
 ﻿using Safari_UnitOfWork_Transaction_Example.Interfaces;
 using System.Data.SqlClient;
-using System.Transactions;
 
 namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private readonly SqlConnection _sqlConnection;
-        private readonly TransactionScope _transactionScope;
+        private readonly IFactory<IUserRepository, SqlConnection> _userRepositoryfactory;
+        private readonly IFactory<SqlConnection> _connectionFactory;
+
+        #region Repositories
         private IUserRepository _userRepository;
         public IUserRepository UserRepository
         {
-            get => _userRepository ?? (_userRepository = new UserRepository(_sqlConnection, _transactionScope));
+            get => _userRepository ?? 
+                (_userRepository = _userRepositoryfactory.Create(_connectionFactory.Create()));
         }
+        #endregion Repositories
 
-        public UnitOfWork(SqlConnection sqlConnection, IsolationLevel isolationLevel)
+        public UnitOfWork(
+            IFactory<IUserRepository, SqlConnection> userRepositoryfactory,
+            IFactory<SqlConnection> connectionFactory)
         {
-            _sqlConnection = sqlConnection;
-            _transactionScope = new TransactionScope(
-                TransactionScopeOption.Required,
-                new TransactionOptions
-                {
-                    IsolationLevel = isolationLevel,
-                    Timeout = TransactionManager.DefaultTimeout
-                });
+            _userRepositoryfactory = userRepositoryfactory;
+            _connectionFactory = connectionFactory;
         }
 
-        public void Commit()
+        public bool Commit()
         {
-            _transactionScope.Complete();
-        }
+            if(!UserRepository.Equals(null))
+                UserRepository.Commit();
 
+            return true;
+        }
+        public bool Rollback()
+        {
+            if (!UserRepository.Equals(null))
+                UserRepository.Rollback();
+
+            return true;
+        }
         public void Dispose()
         {
-            _sqlConnection.Dispose();
-            _transactionScope.Dispose();
+            if (!UserRepository.Equals(null))
+                UserRepository.Dispose();
         }
     }
 }

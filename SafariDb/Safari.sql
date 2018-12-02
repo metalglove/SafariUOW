@@ -1,5 +1,12 @@
-﻿DROP DATABASE SafariDb;
+﻿USE master
+
+IF EXISTS(SELECT name FROM sys.databases
+     WHERE name = 'SafariDb')
+     DROP DATABASE SafariDb
+
+
 CREATE DATABASE SafariDb;
+
 
 USE SafariDb;
 
