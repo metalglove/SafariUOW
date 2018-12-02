@@ -1,16 +1,14 @@
-﻿using Safari_UnitOfWork_Transaction_Example.Abstractions;
-using Safari_UnitOfWork_Transaction_Example.Interfaces;
+﻿using Safari_UnitOfWork_Transaction_Example.Interfaces;
 using System;
 using System.Data.SqlClient;
-using System.Transactions;
 
 namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
-    public class RepositoryFactory<TRepository> : IFactory<TRepository, SqlConnection, IFactory<TransactionScope, IsolationLevel>> where TRepository : RepositoryBase
+    public class RepositoryFactory<TRepository> : IFactory<TRepository, SqlConnection> where TRepository : IUnitOfWorkRepository
     {
-        public TRepository Create(SqlConnection sqlConnection, IFactory<TransactionScope, IsolationLevel> transactionScopeFactory)
+        public TRepository Create(SqlConnection connection)
         {
-            return (TRepository)Activator.CreateInstance(typeof(TRepository), sqlConnection, transactionScopeFactory);
+            return (TRepository)Activator.CreateInstance(typeof(TRepository), connection);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Safari_Tests
 
         public UserRepositoryTests()
         {
-            // Reset the database
+            //Reset the database
             using (SqlConnection sqlConnection = new SqlConnection("Server = (localdb)\\mssqllocaldb; Database = SafariDb; Trusted_Connection = True; ConnectRetryCount = 0"))
             using (SqlCommand sqlCommand = new SqlCommand(Properties.Resources.SafariDbResetSql, sqlConnection))
             {
@@ -32,7 +32,7 @@ namespace Safari_Tests
         }
 
         [TestMethod]
-        public void AddNewUser()
+        public void AddNewUserWithOutUsings()
         {
             User user = new User("Username");
 
@@ -70,6 +70,48 @@ namespace Safari_Tests
 
             User recievedUser = users.Single(usr => usr.Id.Equals(userId));
             Assert.AreEqual(user.UserName, recievedUser.UserName);
+        }
+        [TestMethod]
+        public void AddNewUsersAndRollBack()
+        {
+            int userId1, userId2, userId3;
+            using (IUnitOfWork unitOfWork = UOWFactory.Create())
+            {
+                userId1 = unitOfWork.UserRepository.AddUser(new User("user1"));
+                userId2 = unitOfWork.UserRepository.AddUser(new User("user2"));
+                userId3 = unitOfWork.UserRepository.AddUser(new User("user3"));
+                unitOfWork.Rollback();
+            }
+
+            IEnumerable<User> users;
+            using (IUnitOfWork unitOfWork = UOWFactory.Create())
+            {
+                users = unitOfWork.UserRepository.GetAllUsers();
+                unitOfWork.Commit();
+            }
+
+            Assert.IsFalse(users.Any(user => user.Id.Equals(userId1) || user.Id.Equals(userId2) || user.Id.Equals(userId3)));
+        }
+        [TestMethod]
+        public void AddNewUsersAndCommit()
+        {
+            int userId1, userId2, userId3;
+            using (IUnitOfWork unitOfWork = UOWFactory.Create())
+            {
+                userId1 = unitOfWork.UserRepository.AddUser(new User("user11"));
+                userId2 = unitOfWork.UserRepository.AddUser(new User("user22"));
+                userId3 = unitOfWork.UserRepository.AddUser(new User("user33"));
+                unitOfWork.Commit();
+            }
+
+            IEnumerable<User> users;
+            using (IUnitOfWork unitOfWork = UOWFactory.Create())
+            {
+                users = unitOfWork.UserRepository.GetAllUsers();
+                unitOfWork.Commit();
+            }
+            IEnumerable<bool> actualUsers = users.Select(user => user.Id.Equals(userId1) || user.Id.Equals(userId2) || user.Id.Equals(userId3));
+            Assert.IsTrue(actualUsers.Count().Equals(3));
         }
     }
 }

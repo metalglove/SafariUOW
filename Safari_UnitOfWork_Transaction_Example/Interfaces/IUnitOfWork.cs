@@ -6,5 +6,6 @@ namespace Safari_UnitOfWork_Transaction_Example.Interfaces
     {
         IUserRepository UserRepository { get; }
         bool Commit();
+        bool Rollback();
     }
 }

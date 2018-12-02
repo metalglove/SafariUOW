@@ -3,5 +3,6 @@
     public interface IUnitOfWorkRepository
     {
         bool Commit();
+        bool Rollback();
     }
 }

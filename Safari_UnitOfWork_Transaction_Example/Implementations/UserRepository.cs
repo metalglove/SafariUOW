@@ -1,66 +1,52 @@
-﻿using Safari_UnitOfWork_Transaction_Example.Abstractions;
-using Safari_UnitOfWork_Transaction_Example.Interfaces;
+﻿using Safari_UnitOfWork_Transaction_Example.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Transactions;
 
 namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
-    public class UserRepository : RepositoryBase, IUserRepository
+    public class UserRepository : IUserRepository
     {
-        private readonly IFactory<TransactionScope, IsolationLevel> _transactionScopeFactory;
-        private TransactionScope _transactionScope;
+        private SqlCommand SqlCommand { get; set; }
+        private SqlConnection SqlConnection { get; set; }
+        private SqlTransaction SqlTransaction { get; set; }
 
-        public UserRepository() : base(null)
+        public UserRepository(SqlConnection connection)
         {
-            throw new ArgumentException("Should not be used....");
-        }
-        public UserRepository(SqlConnection sqlConnection, IFactory<TransactionScope, IsolationLevel> transactionScopeFactory) : base(sqlConnection)
-        {
-            _transactionScopeFactory = transactionScopeFactory;
+            SqlConnection = connection;
+            SqlCommand = SqlConnection.CreateCommand();
+            SqlConnection.Open();
+            SqlTransaction = SqlConnection.BeginTransaction();
+            SqlCommand.Transaction = SqlTransaction;
         }
 
         public int AddUser(User user)
         {
-            string QueryString = "INSERT INTO BasicUser (Username) OUTPUT Inserted.Id VALUES (@username);";
-            int basicUserId = -1;
-            _transactionScope = _transactionScopeFactory.Create(IsolationLevel.ReadCommitted);
-            using (SqlConnection conn = new SqlConnection(_sqlConnection.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand(QueryString, conn))
+            int userId = -1;
+            SqlCommand.CommandText = "INSERT INTO BasicUser (Username) OUTPUT Inserted.Id VALUES (@username);";
+            SqlCommand.Parameters.Clear();
+            SqlCommand.Parameters.AddWithValue("username", user.UserName);
+            using (SqlDataReader reader = SqlCommand.ExecuteReader())
             {
-                conn.Open();
-                cmd.Parameters.AddWithValue("username", user.UserName);
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    reader.Read();
-                    basicUserId = (int)reader["Id"];
-                }
-                conn.Close();
+                reader.Read();
+                userId = (int)reader["Id"];
             }
-            return basicUserId;
+            return userId;
         }
         public IEnumerable<User> GetAllUsers()
         {
-            string QueryString = "SELECT Id, Username, LastLogin, RegisterDate FROM BasicUser;";
-            List<User> result = new List<User>();
-            _transactionScope = _transactionScopeFactory.Create(IsolationLevel.Serializable);
-            using (SqlConnection conn = new SqlConnection(_sqlConnection.ConnectionString))
-            using (SqlCommand cmd = new SqlCommand(QueryString, conn))
+            List<User> users = new List<User>();
+            SqlCommand.CommandText = "SELECT Id, Username, LastLogin, RegisterDate FROM BasicUser;";
+            using (SqlDataReader reader = SqlCommand.ExecuteReader())
             {
-                conn.Open();
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                        result.Add(CreateBasicUserFromReader(reader));
-                }
-                conn.Close();
-                return result;
+                while (reader.Read())
+                    users.Add(CreateUserFromReader(reader));
             }
+            return users;
         }
 
-        private static User CreateBasicUserFromReader(SqlDataReader reader)
+        private static User CreateUserFromReader(SqlDataReader reader)
         {
             return new User(
                 id: (int)reader["Id"],
@@ -70,23 +56,39 @@ namespace Safari_UnitOfWork_Transaction_Example.Implementations
             );
         }
 
-        public override bool Commit()
+        public bool Commit()
         {
             try
             {
-                _transactionScope.Complete();
+                SqlTransaction.Commit();
                 return true;
             }
             catch (Exception ex) 
             {
                 Debug.Write($"{nameof(Commit)}, \nException: {ex.Message}");
+                SqlTransaction.Rollback();
                 return false;
             }
         }
-
+        public bool Rollback()
+        {
+            try
+            {
+                SqlTransaction.Rollback();
+                return true;
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                return false;
+            }
+        }
         public void Dispose()
         {
-            _transactionScope.Dispose();
+            SqlConnection.Close();
+            SqlCommand.Dispose();
+            SqlConnection.Dispose();
+            SqlTransaction.Dispose();
         }
     }
 }
