@@ -1,24 +1,16 @@
-﻿using Safari_UnitOfWork_Transaction_Example.Interfaces;
+﻿using Safari_UnitOfWork_Transaction_Example.Abstractions;
+using Safari_UnitOfWork_Transaction_Example.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
 
 namespace Safari_UnitOfWork_Transaction_Example.Implementations
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : UnitOfWorkRepositoryBase, IUserRepository
     {
-        private SqlCommand SqlCommand { get; set; }
-        private SqlConnection SqlConnection { get; set; }
-        private SqlTransaction SqlTransaction { get; set; }
-
-        public UserRepository(SqlConnection connection)
+        public UserRepository(SqlConnection connection) : base(connection)
         {
-            SqlConnection = connection;
-            SqlCommand = SqlConnection.CreateCommand();
-            SqlConnection.Open();
-            SqlTransaction = SqlConnection.BeginTransaction();
-            SqlCommand.Transaction = SqlTransaction;
+           
         }
 
         public int AddUser(User user)
@@ -54,41 +46,6 @@ namespace Safari_UnitOfWork_Transaction_Example.Implementations
                 lastLogin: DateTime.Now,
                 registerDate: Convert.ToDateTime(reader["RegisterDate"])
             );
-        }
-
-        public bool Commit()
-        {
-            try
-            {
-                SqlTransaction.Commit();
-                return true;
-            }
-            catch (Exception ex) 
-            {
-                Debug.Write($"{nameof(Commit)}, \nException: {ex.Message}");
-                SqlTransaction.Rollback();
-                return false;
-            }
-        }
-        public bool Rollback()
-        {
-            try
-            {
-                SqlTransaction.Rollback();
-                return true;
-            }
-            catch(Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                return false;
-            }
-        }
-        public void Dispose()
-        {
-            SqlConnection.Close();
-            SqlCommand.Dispose();
-            SqlConnection.Dispose();
-            SqlTransaction.Dispose();
         }
     }
 }
