@@ -61,26 +61,16 @@ namespace Safari_Tests.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to USE master
-        ///
-        ///IF EXISTS(SELECT name FROM sys.databases
-        ///     WHERE name = &apos;SafariDb&apos;)
-        ///     DROP DATABASE SafariDb
-        ///
-        ///CREATE DATABASE SafariDb;
-        ///
-        ///USE SafariDb;
-        ///
-        ///CREATE TABLE BasicUser(
+        ///   Looks up a localized string similar to CREATE TABLE BasicUser(
         ///    Id int IDENTITY(1,1) PRIMARY KEY,
         ///    Username varchar(50) NOT NULL,
         ///    LastLogin DateTime DEFAULT GetDate(),
         ///    RegisterDate DateTime DEFAULT GetDate()
         ///);.
         /// </summary>
-        internal static string SafariDbResetSql {
+        internal static string SafariDbCreateBasicUserTable {
             get {
-                return ResourceManager.GetString("SafariDbResetSql", resourceCulture);
+                return ResourceManager.GetString("SafariDbCreateBasicUserTable", resourceCulture);
             }
         }
     }

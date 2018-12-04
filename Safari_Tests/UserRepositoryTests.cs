@@ -1,8 +1,8 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Safari_Tests.Utilities;
 using Safari_UnitOfWork_Transaction_Example.Implementations;
 using Safari_UnitOfWork_Transaction_Example.Interfaces;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
 
 namespace Safari_Tests
@@ -12,16 +12,13 @@ namespace Safari_Tests
     {
         private IFactory<IUnitOfWork> UOWFactory { get; set; }
 
-        public UserRepositoryTests()
+        [ClassInitialize]
+        public static void DbCleanReset(TestContext testContext)
         {
-            //Reset the database
-            using (SqlConnection sqlConnection = new SqlConnection("Server = (localdb)\\mssqllocaldb; Database = SafariDb; Trusted_Connection = True; ConnectRetryCount = 0"))
-            using (SqlCommand sqlCommand = new SqlCommand(Properties.Resources.SafariDbResetSql, sqlConnection))
-            {
-                sqlConnection.Open();
-                sqlCommand.ExecuteNonQuery();
-                sqlConnection.Close();
-            }
+            MsSqlDatabaseCreator databaseCreator = new MsSqlDatabaseCreator();
+            databaseCreator.Create(
+                "Server = (localdb)\\mssqllocaldb; Database = SafariDb; Trusted_Connection = True; ConnectRetryCount = 0", 
+                Properties.Resources.SafariDbCreateBasicUserTable);
         }
 
         [TestInitialize]
@@ -109,7 +106,7 @@ namespace Safari_Tests
                 users = unitOfWork.UserRepository.GetAllUsers();
                 unitOfWork.Commit();
             }
-            IEnumerable<bool> actualUsers = users.Select(user => user.Id.Equals(userId1) || user.Id.Equals(userId2) || user.Id.Equals(userId3));
+            IEnumerable<User> actualUsers = users.Where(user => user.Id.Equals(userId1) || user.Id.Equals(userId2) || user.Id.Equals(userId3));
             Assert.IsTrue(actualUsers.Count().Equals(3));
         }
     }

@@ -117,18 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="SafariDbResetSql" xml:space="preserve">
-    <value>USE master
-
-IF EXISTS(SELECT name FROM sys.databases
-     WHERE name = 'SafariDb')
-     DROP DATABASE SafariDb
-
-CREATE DATABASE SafariDb;
-
-USE SafariDb;
-
-CREATE TABLE BasicUser(
+  <data name="SafariDbCreateBasicUserTable" xml:space="preserve">
+    <value>CREATE TABLE BasicUser(
     Id int IDENTITY(1,1) PRIMARY KEY,
     Username varchar(50) NOT NULL,
     LastLogin DateTime DEFAULT GetDate(),
