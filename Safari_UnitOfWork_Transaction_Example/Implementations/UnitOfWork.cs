@@ -27,21 +27,21 @@ namespace Safari_UnitOfWork_Transaction_Example.Implementations
 
         public bool Commit()
         {
-            if(!_userRepository.Equals(null))
+            if(_userRepository != null)
                 _userRepository.Commit();
 
             return true;
         }
         public bool Rollback()
         {
-            if (!_userRepository.Equals(null))
+            if (_userRepository != null)
                 _userRepository.Rollback();
 
             return true;
         }
         public void Dispose()
         {
-            if (!_userRepository.Equals(null))
+            if (_userRepository != null)
                 _userRepository.Dispose();
         }
     }
