@@ -3,9 +3,9 @@ using System.Data.SqlClient;
 
 namespace Safari_Tests.Utilities
 {
-    internal class MsSqlDatabaseCreator
+    internal static class MsSqlDatabaseCreator
     {
-        public void Create(string connectionstring, string tableCreations = "")
+        public static void Create(string connectionstring, string tableCreations = "")
         {
             if (DatabaseExists(connectionstring))
             {

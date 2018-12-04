@@ -15,8 +15,7 @@ namespace Safari_Tests
         [ClassInitialize]
         public static void DbCleanReset(TestContext testContext)
         {
-            MsSqlDatabaseCreator databaseCreator = new MsSqlDatabaseCreator();
-            databaseCreator.Create(
+            MsSqlDatabaseCreator.Create(
                 "Server = (localdb)\\mssqllocaldb; Database = SafariDb; Trusted_Connection = True; ConnectRetryCount = 0", 
                 Properties.Resources.SafariDbCreateBasicUserTable);
         }
